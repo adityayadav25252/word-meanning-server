@@ -1,14 +1,4 @@
-// server.js — Word Meaning Plugin Backend
-// Ye server tumhari Groq API key ko safe rakhta hai
-// User ko koi API key nahi deni padti!
-//
-// Setup:
-//   npm install express cors
-//   node server.js
-//
-// Deploy karo FREE pe:
-//   Railway.app / Render.com / Vercel (edge functions)
-
+// server.js — Word Meaning Plugin Backend v2
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -18,15 +8,19 @@ import cors from "cors";
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Yahan apni Groq API key daalo ──────────────────────────────────────────
-// Get free key: https://console.groq.com → API Keys → Create
-const GROQ_API_KEY = process.env.GROQ_API_KEY ;
-// ───────────────────────────────────────────────────────────────────────────
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-app.use(cors());           // Kisi bhi website se call allow karo
+// ── CORS Fix — Sabhi websites ko allow karo ───────────────────────────────────
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+app.options("*", cors());   // ← ye line bahut important hai!
+
 app.use(express.json());
 
-// ── Health check ─────────────────────────────────────────────────────────────
+// ── Health check ──────────────────────────────────────────────────────────────
 app.get("/", (req, res) => {
   res.json({ status: "Word Meaning Plugin Server running ✓" });
 });
@@ -35,9 +29,7 @@ app.get("/", (req, res) => {
 app.post("/meaning", async (req, res) => {
   const { word, context, lang } = req.body;
 
-  if (!word) {
-    return res.status(400).json({ error: "word is required" });
-  }
+  if (!word) return res.status(400).json({ error: "word is required" });
 
   const selectedLang = lang || "Hindi";
   const isEnOnly     = selectedLang === "English";
@@ -69,12 +61,8 @@ Example: [one example sentence in ${isEnOnly ? "English" : selectedLang}]${conte
     });
 
     const data = await groqRes.json();
+    if (!data.choices?.[0]?.message) throw new Error("Empty response");
 
-    if (!data.choices?.[0]?.message) {
-      throw new Error("Empty response from Groq");
-    }
-
-    // Parse the structured response
     const lines   = data.choices[0].message.content.trim().split("\n");
     const result  = { pos: "", en: "", regional: "", syn: "", ant: "", ex: "" };
     const langKey = selectedLang.toLowerCase() + ":";
@@ -101,7 +89,5 @@ Example: [one example sentence in ${isEnOnly ? "English" : selectedLang}]${conte
 });
 
 app.listen(PORT, () => {
-  console.log(`\n✅ Word Meaning Plugin Server running on port ${PORT}`);
-  console.log(`   Local:   http://localhost:${PORT}`);
-  console.log(`   Endpoint: POST http://localhost:${PORT}/meaning\n`);
+  console.log(`\n✅ Server running on port ${PORT}`);
 });
