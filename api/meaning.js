@@ -1,7 +1,7 @@
 // api/meaning.js — Vercel Serverless Function
 // Ye Vercel ka proper tarika hai — Express nahi chahiye!
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
 
   // ── CORS headers — SABSE PEHLE ──────────────────────────────────────────
   res.setHeader("Access-Control-Allow-Origin",  "*");
